@@ -1,0 +1,18 @@
+services:
+  wedding-uploader:
+    build: .
+    container_name: wedding-uploader
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    environment:
+      - UPLOAD_PIN=${UPLOAD_PIN:-1234}
+      - MAX_UPLOAD_SIZE=${MAX_UPLOAD_SIZE:-2147483648}
+      - DATA_DIR=/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/auth/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

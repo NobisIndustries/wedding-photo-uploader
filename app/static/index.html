@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Our Wedding Photos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- PIN Screen -->
+    <div id="auth-screen" class="screen">
+        <div class="auth-card">
+            <div class="auth-icon">&#128248;</div>
+            <h1>Our Wedding</h1>
+            <p>Enter the PIN to share your photos & videos</p>
+            <form id="pin-form">
+                <input type="password" id="pin-input" inputmode="numeric" pattern="[0-9a-zA-Z]*"
+                       placeholder="Enter PIN" autocomplete="off" maxlength="20">
+                <button type="submit" class="btn btn-primary">Enter</button>
+            </form>
+            <p id="pin-error" class="error hidden">Invalid PIN. Please try again.</p>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="app-screen" class="screen hidden">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>Our Wedding Photos</h1>
+            <label class="btn btn-upload" for="file-input">
+                <span class="upload-icon">+</span> Upload
+            </label>
+            <input type="file" id="file-input" multiple
+                   accept="image/*,video/*" class="hidden">
+        </header>
+
+        <!-- Upload Progress -->
+        <div id="upload-progress" class="upload-progress hidden"></div>
+
+        <!-- Gallery -->
+        <div id="gallery" class="gallery">
+            <div id="empty-state" class="empty-state hidden">
+                <div class="empty-icon">&#128247;</div>
+                <p>No photos yet — be the first to share!</p>
+            </div>
+        </div>
+
+        <!-- Loading more -->
+        <div id="load-more" class="load-more hidden">
+            <button class="btn btn-secondary" id="load-more-btn">Load more</button>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox hidden">
+        <button class="lightbox-close" id="lightbox-close">&times;</button>
+        <button class="lightbox-nav lightbox-prev" id="lightbox-prev">&#8249;</button>
+        <div class="lightbox-content" id="lightbox-content"></div>
+        <button class="lightbox-nav lightbox-next" id="lightbox-next">&#8250;</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.2.3/dist/tus.min.js"></script>
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/upload.js"></script>
+    <script src="/static/js/gallery.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
