@@ -206,10 +206,11 @@ const Gallery = {
         if (video) video.pause();
 
         const isVideo = item.mime_type.startsWith("video/");
+        const displayUrl = item.preview_url || item.file_url;
         if (isVideo) {
-            content.innerHTML = `<video src="${item.file_url}" controls playsinline autoplay></video>`;
+            content.innerHTML = `<video src="${displayUrl}" controls playsinline autoplay></video>`;
         } else {
-            content.innerHTML = `<img src="${item.file_url}" alt="${this._escapeHtml(item.original_filename)}">`;
+            content.innerHTML = `<img src="${displayUrl}" alt="${this._escapeHtml(item.original_filename)}">`;
         }
 
         const prev = document.getElementById("lightbox-prev");

@@ -25,6 +25,18 @@ def _upload_path(row) -> Path:
     return config.UPLOADS_DIR / (f"{row['id']}.{ext}" if ext else row["id"])
 
 
+def _preview_path(row) -> Path | None:
+    """Resolve the preview path for a row, or None if the type has no preview.
+
+    Only images get previews — videos are streamed as-is from /original via
+    the /preview fallback.
+    """
+    ext = (row["file_extension"] or "").lower()
+    if ext in config.IMAGE_EXTENSIONS:
+        return config.PREVIEWS_DIR / f"{row['id']}_preview.jpg"
+    return None
+
+
 @router.get("/{file_id}/thumbnail")
 async def get_thumbnail(file_id: str, session_id: str = Depends(require_session)):
     await _get_upload(file_id)
@@ -32,6 +44,21 @@ async def get_thumbnail(file_id: str, session_id: str = Depends(require_session)
     if not thumb_path.exists():
         raise HTTPException(status_code=404, detail="Thumbnail not ready")
     return FileResponse(str(thumb_path), media_type="image/jpeg")
+
+
+@router.get("/{file_id}/preview")
+async def get_preview(file_id: str, session_id: str = Depends(require_session)):
+    """Display-sized preview. Falls back to the original if not yet ready."""
+    row = await _get_upload(file_id)
+    preview_path = _preview_path(row)
+    if preview_path and preview_path.exists():
+        return FileResponse(str(preview_path), media_type="image/jpeg")
+
+    # Fallback: preview not generated yet (or unknown type) — serve the original
+    file_path = _upload_path(row)
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found on disk")
+    return FileResponse(str(file_path), media_type=row["mime_type"])
 
 
 @router.get("/{file_id}/original")
@@ -73,11 +100,14 @@ async def delete_file(file_id: str, session_id: str = Depends(require_session)):
 
     file_path = _upload_path(row)
     thumb_path = config.THUMBNAILS_DIR / f"{file_id}_thumb.jpg"
+    preview_path = _preview_path(row)
 
     if file_path.exists():
         file_path.unlink()
     if thumb_path.exists():
         thumb_path.unlink()
+    if preview_path and preview_path.exists():
+        preview_path.unlink()
 
     db = await get_db()
     await db.execute("DELETE FROM uploads WHERE id = ?", (file_id,))

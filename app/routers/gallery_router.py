@@ -40,6 +40,7 @@ async def get_gallery(
             created_at=row["created_at"],
             is_owner=row["session_id"] == session_id,
             thumbnail_url=f"/api/files/{row['id']}/thumbnail",
+            preview_url=f"/api/files/{row['id']}/preview",
             file_url=f"/api/files/{row['id']}/original",
             thumbnail_ready=_thumb_ready(row["id"]),
         )

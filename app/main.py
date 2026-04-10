@@ -40,6 +40,7 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 async def startup():
     config.UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
     config.THUMBNAILS_DIR.mkdir(parents=True, exist_ok=True)
+    config.PREVIEWS_DIR.mkdir(parents=True, exist_ok=True)
     await init_db()
 
 

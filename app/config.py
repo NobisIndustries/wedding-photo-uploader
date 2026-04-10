@@ -11,6 +11,7 @@ SESSION_SECRET: str = os.environ.get("SESSION_SECRET", uuid.uuid4().hex)
 
 UPLOADS_DIR: Path = DATA_DIR / "uploads"
 THUMBNAILS_DIR: Path = DATA_DIR / "thumbnails"
+PREVIEWS_DIR: Path = DATA_DIR / "previews"
 DB_PATH: Path = DATA_DIR / "metadata.db"
 
 ALLOWED_EXTENSIONS: set[str] = {

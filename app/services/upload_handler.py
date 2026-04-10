@@ -9,7 +9,7 @@ from tuspyserver import create_tus_router
 from app import config
 from app.auth import require_session
 from app.database import get_db
-from app.services.thumbnail import generate_thumbnail
+from app.services.thumbnail import generate_assets
 
 
 def _get_extension(filename: str) -> str:
@@ -61,7 +61,7 @@ def _make_upload_complete_dep(
         await db.commit()
 
         asyncio.get_event_loop().run_in_executor(
-            None, generate_thumbnail, str(new_path), file_id, ext
+            None, generate_assets, str(new_path), file_id, ext
         )
 
     return handler

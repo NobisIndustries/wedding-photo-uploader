@@ -19,6 +19,7 @@ class UploadItem(BaseModel):
     created_at: str
     is_owner: bool
     thumbnail_url: str
+    preview_url: str
     file_url: str
     thumbnail_ready: bool
 
