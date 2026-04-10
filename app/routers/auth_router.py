@@ -1,3 +1,5 @@
+import time
+from asyncio import Lock
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from app.models import PinRequest, AuthStatus
@@ -6,9 +8,42 @@ from app.auth import get_session_id, create_session, _fetch_session
 
 router = APIRouter()
 
+_PIN_RATE_LIMIT_SECONDS = 1.0
+_PIN_CLEANUP_INTERVAL_SECONDS = 60.0
+_last_pin_attempt: dict[str, float] = {}
+_pin_attempt_lock = Lock()
+_last_cleanup = 0.0
+
+
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
 
 @router.post("/verify-pin")
-async def verify_pin(body: PinRequest):
+async def verify_pin(body: PinRequest, request: Request):
+    ip = _client_ip(request)
+    now = time.monotonic()
+    global _last_cleanup
+    async with _pin_attempt_lock:
+        if now - _last_cleanup > _PIN_CLEANUP_INTERVAL_SECONDS:
+            cutoff = now - _PIN_RATE_LIMIT_SECONDS
+            for stale_ip in [k for k, v in _last_pin_attempt.items() if v < cutoff]:
+                del _last_pin_attempt[stale_ip]
+            _last_cleanup = now
+
+        last = _last_pin_attempt.get(ip, 0.0)
+        if now - last < _PIN_RATE_LIMIT_SECONDS:
+            retry_after = _PIN_RATE_LIMIT_SECONDS - (now - last)
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too many attempts, slow down."},
+                headers={"Retry-After": f"{retry_after:.1f}"},
+            )
+        _last_pin_attempt[ip] = now
+
     if body.pin == ADMIN_PIN:
         is_admin = True
     elif body.pin == UPLOAD_PIN:
