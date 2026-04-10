@@ -21,7 +21,17 @@ const App = {
     showApp() {
         document.getElementById("auth-screen").classList.add("hidden");
         document.getElementById("app-screen").classList.remove("hidden");
+        this.applyAdminUI();
         Gallery.refresh();
+    },
+
+    applyAdminUI() {
+        const zipBtn = document.getElementById("download-all-btn");
+        if (Auth.isAdmin) {
+            zipBtn.classList.remove("hidden");
+        } else {
+            zipBtn.classList.add("hidden");
+        }
     },
 };
 

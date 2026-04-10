@@ -52,9 +52,10 @@ app/
 ## Key design decisions
 
 - **No accounts** — single shared PIN gates access, session tracked via httponly cookie
-- **Session-based deletion** — users can delete their own uploads (matched by session_id cookie)
+- **Session-based deletion** — users can delete their own uploads (matched by session_id cookie). Admin sessions can delete any upload.
+- **Admin mode** — second PIN (`ADMIN_PIN`) grants per-file download buttons in the lightbox and a "download all as ZIP" button in the header. The ZIP is streamed via `zipstream-ng` with `ZIP_STORED` (no compression) so memory stays flat on the N100 — perfect for 50GB+ archives.
 - **UUID filenames** — all files stored as `{uuid}.{ext}`, original names in SQLite only
-- **Thumbnails generated async** — background thread after upload completes, gallery refresh has 1.5s delay to compensate
+- **Thumbnails generated async** — background thread after upload. Gallery items carry a `thumbnail_ready` flag; the frontend shows a spinner placeholder and polls `POST /api/gallery/thumbnail-status` (batch) until every pending thumb is ready.
 - **tus protocol** — chunked 5MB uploads with automatic retry/resume for large videos on flaky mobile connections
 
 ## Environment variables
@@ -62,6 +63,7 @@ app/
 | Variable | Default | Description |
 |---|---|---|
 | `UPLOAD_PIN` | `1234` | Shared PIN for guest access |
+| `ADMIN_PIN` | `admin` | PIN that unlocks admin mode (downloads, global delete). Change in prod. |
 | `MAX_UPLOAD_SIZE` | `2147483648` (2GB) | Max upload size in bytes |
 | `DATA_DIR` | `/data` | Storage root (uploads, thumbnails, metadata.db) |
 | `SESSION_SECRET` | auto-generated | Cookie signing secret |

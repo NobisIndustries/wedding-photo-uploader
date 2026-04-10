@@ -1,10 +1,14 @@
 const Auth = {
+    isAdmin: false,
+
     async checkStatus() {
         try {
             const res = await fetch("/api/auth/status");
             const data = await res.json();
+            this.isAdmin = data.is_admin === true;
             return data.authenticated === true;
         } catch {
+            this.isAdmin = false;
             return false;
         }
     },
@@ -15,7 +19,10 @@ const Auth = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ pin }),
         });
-        return res.ok;
+        if (!res.ok) return false;
+        const data = await res.json();
+        this.isAdmin = data.is_admin === true;
+        return true;
     },
 
     init() {

@@ -7,6 +7,7 @@ class PinRequest(BaseModel):
 
 class AuthStatus(BaseModel):
     authenticated: bool
+    is_admin: bool = False
 
 
 class UploadItem(BaseModel):
@@ -19,6 +20,7 @@ class UploadItem(BaseModel):
     is_owner: bool
     thumbnail_url: str
     file_url: str
+    thumbnail_ready: bool
 
 
 class GalleryResponse(BaseModel):

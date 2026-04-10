@@ -9,6 +9,7 @@ services:
       - ./data:/data
     environment:
       - UPLOAD_PIN=${UPLOAD_PIN:-1234}
+      - ADMIN_PIN=${ADMIN_PIN:-admin}
       - MAX_UPLOAD_SIZE=${MAX_UPLOAD_SIZE:-2147483648}
       - DATA_DIR=/data
     healthcheck:

@@ -2,8 +2,13 @@ from fastapi import APIRouter, Depends, Query
 from app.auth import require_session
 from app.database import get_db
 from app.models import UploadItem, GalleryResponse
+from app import config
 
 router = APIRouter()
+
+
+def _thumb_ready(file_id: str) -> bool:
+    return (config.THUMBNAILS_DIR / f"{file_id}_thumb.jpg").exists()
 
 
 @router.get("", response_model=GalleryResponse)
@@ -36,8 +41,18 @@ async def get_gallery(
             is_owner=row["session_id"] == session_id,
             thumbnail_url=f"/api/files/{row['id']}/thumbnail",
             file_url=f"/api/files/{row['id']}/original",
+            thumbnail_ready=_thumb_ready(row["id"]),
         )
         for row in rows
     ]
 
     return GalleryResponse(items=items, total=total, page=page, per_page=per_page)
+
+
+@router.post("/thumbnail-status")
+async def thumbnail_status(
+    ids: list[str],
+    session_id: str = Depends(require_session),
+):
+    """Batch check which of the given file IDs have thumbnails ready."""
+    return {file_id: _thumb_ready(file_id) for file_id in ids}

@@ -30,9 +30,15 @@
         <!-- Header -->
         <header class="app-header">
             <h1>Our Wedding Photos</h1>
-            <label class="btn btn-upload" for="file-input">
-                <span class="upload-icon">+</span> Upload
-            </label>
+            <div class="header-actions">
+                <a id="download-all-btn" class="btn btn-secondary hidden"
+                   href="/api/files/download-all" title="Download all as ZIP">
+                    &#11015; ZIP
+                </a>
+                <label class="btn btn-upload" for="file-input">
+                    <span class="upload-icon">+</span> Upload
+                </label>
+            </div>
             <input type="file" id="file-input" multiple
                    accept="image/*,video/*" class="hidden">
         </header>
@@ -57,6 +63,8 @@
     <!-- Lightbox -->
     <div id="lightbox" class="lightbox hidden">
         <button class="lightbox-close" id="lightbox-close">&times;</button>
+        <a id="lightbox-download" class="lightbox-download hidden"
+           href="#" title="Download original">&#11015;</a>
         <button class="lightbox-nav lightbox-prev" id="lightbox-prev">&#8249;</button>
         <div class="lightbox-content" id="lightbox-content"></div>
         <button class="lightbox-nav lightbox-next" id="lightbox-next">&#8250;</button>

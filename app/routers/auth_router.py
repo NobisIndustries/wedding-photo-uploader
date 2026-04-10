@@ -1,20 +1,23 @@
-from fastapi import APIRouter, Response, Request
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from app.models import PinRequest, AuthStatus
-from app.config import UPLOAD_PIN
-from app.auth import get_session_id, create_session
-from app.database import get_db
+from app.config import UPLOAD_PIN, ADMIN_PIN
+from app.auth import get_session_id, create_session, _fetch_session
 
 router = APIRouter()
 
 
 @router.post("/verify-pin")
-async def verify_pin(body: PinRequest, response: Response):
-    if body.pin != UPLOAD_PIN:
+async def verify_pin(body: PinRequest):
+    if body.pin == ADMIN_PIN:
+        is_admin = True
+    elif body.pin == UPLOAD_PIN:
+        is_admin = False
+    else:
         return JSONResponse(status_code=401, content={"detail": "Invalid PIN"})
 
-    session_id = await create_session()
-    response = JSONResponse(content={"authenticated": True})
+    session_id = await create_session(is_admin=is_admin)
+    response = JSONResponse(content={"authenticated": True, "is_admin": is_admin})
     response.set_cookie(
         key="session_id",
         value=session_id,
@@ -31,7 +34,7 @@ async def auth_status(request: Request):
     session_id = await get_session_id(request)
     if not session_id:
         return AuthStatus(authenticated=False)
-    db = await get_db()
-    cursor = await db.execute("SELECT id FROM sessions WHERE id = ?", (session_id,))
-    row = await cursor.fetchone()
-    return AuthStatus(authenticated=row is not None)
+    row = await _fetch_session(session_id)
+    if not row:
+        return AuthStatus(authenticated=False)
+    return AuthStatus(authenticated=True, is_admin=bool(row["is_admin"]))

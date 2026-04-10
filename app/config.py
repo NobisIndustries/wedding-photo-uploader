@@ -4,6 +4,7 @@ from pathlib import Path
 
 
 UPLOAD_PIN: str = os.environ.get("UPLOAD_PIN", "1234")
+ADMIN_PIN: str = os.environ.get("ADMIN_PIN", "admin")
 MAX_UPLOAD_SIZE: int = int(os.environ.get("MAX_UPLOAD_SIZE", 2_147_483_648))
 DATA_DIR: Path = Path(os.environ.get("DATA_DIR", "/data"))
 SESSION_SECRET: str = os.environ.get("SESSION_SECRET", uuid.uuid4().hex)

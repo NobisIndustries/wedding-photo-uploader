@@ -4,6 +4,7 @@ const Gallery = {
     total: 0,
     items: [],
     lightboxIndex: -1,
+    _thumbPollTimer: null,
 
     async refresh() {
         this.currentPage = 1;
@@ -29,6 +30,7 @@ const Gallery = {
             }
 
             this.render();
+            this._schedulePendingThumbPoll();
         } catch (e) {
             console.error("Failed to load gallery:", e);
         }
@@ -56,13 +58,24 @@ const Gallery = {
             el.dataset.id = item.id;
 
             const isVideo = item.mime_type.startsWith("video/");
+            const canDelete = item.is_owner || Auth.isAdmin;
 
-            el.innerHTML = `
-                <img src="${item.thumbnail_url}" alt="${this._escapeHtml(item.original_filename)}"
-                     loading="lazy" onerror="this.style.display='none'">
-                ${isVideo ? '<span class="video-badge">&#9654; Video</span>' : ""}
-                ${item.is_owner ? '<button class="delete-btn" title="Delete">&times;</button>' : ""}
-            `;
+            if (item.thumbnail_ready) {
+                el.innerHTML = `
+                    <img src="${item.thumbnail_url}" alt="${this._escapeHtml(item.original_filename)}"
+                         loading="lazy" onerror="this.style.display='none'">
+                    ${isVideo ? '<span class="video-badge">&#9654; Video</span>' : ""}
+                    ${canDelete ? '<button class="delete-btn" title="Delete">&times;</button>' : ""}
+                `;
+            } else {
+                el.innerHTML = `
+                    <div class="thumb-pending" data-thumb-pending="${item.id}">
+                        <div class="thumb-spinner"></div>
+                    </div>
+                    ${isVideo ? '<span class="video-badge">&#9654; Video</span>' : ""}
+                    ${canDelete ? '<button class="delete-btn" title="Delete">&times;</button>' : ""}
+                `;
+            }
 
             el.addEventListener("click", (e) => {
                 if (e.target.classList.contains("delete-btn")) {
@@ -83,6 +96,81 @@ const Gallery = {
         } else {
             loadMore.classList.add("hidden");
         }
+    },
+
+    _schedulePendingThumbPoll() {
+        if (this._thumbPollTimer) {
+            clearTimeout(this._thumbPollTimer);
+            this._thumbPollTimer = null;
+        }
+
+        const pendingIds = this.items
+            .filter((i) => !i.thumbnail_ready)
+            .map((i) => i.id);
+        if (pendingIds.length === 0) return;
+
+        this._thumbPollTimer = setTimeout(() => this._pollPendingThumbs(pendingIds), 1000);
+    },
+
+    async _pollPendingThumbs(pendingIds) {
+        this._thumbPollTimer = null;
+        // Guard against stale polls after a refresh
+        const stillPending = pendingIds.filter((id) =>
+            this.items.some((i) => i.id === id && !i.thumbnail_ready)
+        );
+        if (stillPending.length === 0) return;
+
+        let statusMap;
+        try {
+            const res = await fetch("/api/gallery/thumbnail-status", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(stillPending),
+            });
+            if (!res.ok) throw new Error("thumb status failed");
+            statusMap = await res.json();
+        } catch (e) {
+            // Retry with backoff on failure
+            this._thumbPollTimer = setTimeout(
+                () => this._pollPendingThumbs(stillPending),
+                3000
+            );
+            return;
+        }
+
+        let anyReady = false;
+        for (const id of stillPending) {
+            if (!statusMap[id]) continue;
+            const item = this.items.find((i) => i.id === id);
+            if (!item) continue;
+            item.thumbnail_ready = true;
+            anyReady = true;
+            this._swapInThumb(id, item);
+        }
+
+        // Keep polling while anything is still pending
+        const stillLeft = this.items
+            .filter((i) => !i.thumbnail_ready)
+            .map((i) => i.id);
+        if (stillLeft.length > 0) {
+            const delay = anyReady ? 1500 : 2500;
+            this._thumbPollTimer = setTimeout(
+                () => this._pollPendingThumbs(stillLeft),
+                delay
+            );
+        }
+    },
+
+    _swapInThumb(id, item) {
+        const host = document.querySelector(`[data-thumb-pending="${id}"]`);
+        if (!host) return;
+        const img = document.createElement("img");
+        img.loading = "lazy";
+        img.alt = item.original_filename;
+        img.onerror = function () { this.style.display = "none"; };
+        // Cache-bust to force a fresh fetch
+        img.src = `${item.thumbnail_url}?t=${Date.now()}`;
+        host.replaceWith(img);
     },
 
     async deleteItem(id) {
@@ -128,6 +216,14 @@ const Gallery = {
         const next = document.getElementById("lightbox-next");
         prev.classList.toggle("hidden", this.lightboxIndex <= 0);
         next.classList.toggle("hidden", this.lightboxIndex >= this.items.length - 1);
+
+        const dl = document.getElementById("lightbox-download");
+        if (Auth.isAdmin) {
+            dl.href = `/api/files/${item.id}/download`;
+            dl.classList.remove("hidden");
+        } else {
+            dl.classList.add("hidden");
+        }
     },
 
     navigateLightbox(delta) {

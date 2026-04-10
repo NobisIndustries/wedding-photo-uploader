@@ -156,6 +156,18 @@ h1 {
     font-weight: 600;
 }
 
+.header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+#download-all-btn {
+    padding: 10px 14px;
+    font-size: 14px;
+    border-radius: 50px;
+}
+
 /* ── Upload Progress ── */
 .upload-progress {
     padding: 12px 16px;
@@ -209,6 +221,14 @@ h1 {
     background: var(--danger);
 }
 
+.upload-more {
+    padding: 6px 0 2px;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    font-style: italic;
+}
+
 /* ── Gallery Grid ── */
 .gallery {
     padding: 8px;
@@ -231,6 +251,28 @@ h1 {
     height: 100%;
     object-fit: cover;
     transition: transform 0.2s;
+}
+
+.thumb-pending {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--border);
+}
+
+.thumb-spinner {
+    width: 28px;
+    height: 28px;
+    border: 3px solid rgba(0, 0, 0, 0.12);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: thumb-spin 0.9s linear infinite;
+}
+
+@keyframes thumb-spin {
+    to { transform: rotate(360deg); }
 }
 
 .gallery-item:hover img { transform: scale(1.05); }
@@ -314,6 +356,26 @@ h1 {
     line-height: 1;
     padding: 8px;
 }
+
+.lightbox-download {
+    position: absolute;
+    top: 18px;
+    right: 64px;
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    text-decoration: none;
+    font-size: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    transition: background 0.2s;
+}
+
+.lightbox-download:hover { background: rgba(255, 255, 255, 0.22); }
 
 .lightbox-nav {
     position: absolute;

@@ -17,9 +17,15 @@ async def init_db():
     await db.execute("""
         CREATE TABLE IF NOT EXISTS sessions (
             id TEXT PRIMARY KEY,
+            is_admin INTEGER NOT NULL DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # Migration for existing DBs that predate the is_admin column
+    cursor = await db.execute("PRAGMA table_info(sessions)")
+    cols = {row[1] for row in await cursor.fetchall()}
+    if "is_admin" not in cols:
+        await db.execute("ALTER TABLE sessions ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0")
     await db.execute("""
         CREATE TABLE IF NOT EXISTS uploads (
             id TEXT PRIMARY KEY,
