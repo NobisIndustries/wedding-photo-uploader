@@ -17,8 +17,9 @@
             <h1>Our Wedding</h1>
             <p>Enter the PIN to share your photos & videos</p>
             <form id="pin-form">
-                <input type="password" id="pin-input" inputmode="numeric" pattern="[0-9a-zA-Z]*"
-                       placeholder="Enter PIN" autocomplete="off" maxlength="20">
+                <input type="password" id="pin-input" inputmode="text" pattern="[0-9a-zA-Z]*"
+                       placeholder="Enter PIN" autocomplete="off" autocapitalize="off"
+                       autocorrect="off" spellcheck="false" maxlength="20">
                 <button type="submit" class="btn btn-primary">Enter</button>
             </form>
             <p id="pin-error" class="error hidden">Invalid PIN. Please try again.</p>
