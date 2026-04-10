@@ -51,7 +51,8 @@ async def verify_pin(body: PinRequest, request: Request):
     else:
         return JSONResponse(status_code=401, content={"detail": "Invalid PIN"})
 
-    session_id = await create_session(is_admin=is_admin)
+    guest_name = (body.name or "").strip()[:50] or None
+    session_id = await create_session(is_admin=is_admin, guest_name=guest_name)
     response = JSONResponse(content={"authenticated": True, "is_admin": is_admin})
     response.set_cookie(
         key="session_id",

@@ -17,6 +17,9 @@
             <h1>Our Wedding</h1>
             <p>Enter the PIN to share your photos & videos</p>
             <form id="pin-form">
+                <input type="text" id="name-input"
+                       placeholder="Your name (optional)" autocomplete="name"
+                       autocapitalize="words" spellcheck="false" maxlength="50">
                 <input type="password" id="pin-input" inputmode="text" pattern="[0-9a-zA-Z]*"
                        placeholder="Enter PIN" autocomplete="off" autocapitalize="off"
                        autocorrect="off" spellcheck="false" maxlength="20">
@@ -68,6 +71,7 @@
            href="#" title="Download original">&#11015;</a>
         <button class="lightbox-nav lightbox-prev" id="lightbox-prev">&#8249;</button>
         <div class="lightbox-content" id="lightbox-content"></div>
+        <div class="lightbox-caption hidden" id="lightbox-caption"></div>
         <button class="lightbox-nav lightbox-next" id="lightbox-next">&#8250;</button>
     </div>
 

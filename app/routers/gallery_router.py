@@ -25,7 +25,9 @@ async def get_gallery(
     total = row[0]
 
     cursor = await db.execute(
-        "SELECT * FROM uploads ORDER BY created_at DESC LIMIT ? OFFSET ?",
+        """SELECT uploads.*, sessions.guest_name AS uploader_name
+           FROM uploads LEFT JOIN sessions ON uploads.session_id = sessions.id
+           ORDER BY uploads.created_at DESC LIMIT ? OFFSET ?""",
         (per_page, offset),
     )
     rows = await cursor.fetchall()
@@ -39,6 +41,7 @@ async def get_gallery(
             file_size=row["file_size"],
             created_at=row["created_at"],
             is_owner=row["session_id"] == session_id,
+            uploader_name=row["uploader_name"],
             thumbnail_url=f"/api/files/{row['id']}/thumbnail",
             preview_url=f"/api/files/{row['id']}/preview",
             file_url=f"/api/files/{row['id']}/original",

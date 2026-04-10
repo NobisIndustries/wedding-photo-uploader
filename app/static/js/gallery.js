@@ -218,6 +218,15 @@ const Gallery = {
         prev.classList.toggle("hidden", this.lightboxIndex <= 0);
         next.classList.toggle("hidden", this.lightboxIndex >= this.items.length - 1);
 
+        const caption = document.getElementById("lightbox-caption");
+        if (item.uploader_name) {
+            caption.textContent = `Shared by ${item.uploader_name}`;
+            caption.classList.remove("hidden");
+        } else {
+            caption.textContent = "";
+            caption.classList.add("hidden");
+        }
+
         const dl = document.getElementById("lightbox-download");
         if (Auth.isAdmin) {
             dl.href = `/api/files/${item.id}/download`;

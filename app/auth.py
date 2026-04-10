@@ -44,12 +44,12 @@ async def is_admin_session(session_id: str | None) -> bool:
     return bool(row and row["is_admin"])
 
 
-async def create_session(is_admin: bool = False) -> str:
+async def create_session(is_admin: bool = False, guest_name: str | None = None) -> str:
     session_id = uuid.uuid4().hex
     db = await get_db()
     await db.execute(
-        "INSERT INTO sessions (id, is_admin) VALUES (?, ?)",
-        (session_id, 1 if is_admin else 0),
+        "INSERT INTO sessions (id, is_admin, guest_name) VALUES (?, ?, ?)",
+        (session_id, 1 if is_admin else 0, guest_name),
     )
     await db.commit()
     return session_id

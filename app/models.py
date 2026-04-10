@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 class PinRequest(BaseModel):
     pin: str
+    name: str | None = None
 
 
 class AuthStatus(BaseModel):
@@ -18,6 +19,7 @@ class UploadItem(BaseModel):
     file_size: int
     created_at: str
     is_owner: bool
+    uploader_name: str | None = None
     thumbnail_url: str
     preview_url: str
     file_url: str

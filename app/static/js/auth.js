@@ -13,11 +13,11 @@ const Auth = {
         }
     },
 
-    async verifyPin(pin) {
+    async verifyPin(pin, name) {
         const res = await fetch("/api/auth/verify-pin", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ pin }),
+            body: JSON.stringify({ pin, name: name || null }),
         });
         if (res.status === 429) return "rate_limited";
         if (!res.ok) return false;
@@ -29,6 +29,7 @@ const Auth = {
     init() {
         const form = document.getElementById("pin-form");
         const input = document.getElementById("pin-input");
+        const nameInput = document.getElementById("name-input");
         const error = document.getElementById("pin-error");
         const submitBtn = form.querySelector('button[type="submit"]');
         let lastAttempt = 0;
@@ -37,6 +38,7 @@ const Auth = {
             e.preventDefault();
             error.classList.add("hidden");
             const pin = input.value.trim();
+            const name = nameInput.value.trim();
             if (!pin) return;
 
             const now = Date.now();
@@ -46,7 +48,7 @@ const Auth = {
             if (submitBtn) submitBtn.disabled = true;
             setTimeout(() => { if (submitBtn) submitBtn.disabled = false; }, 1000);
 
-            const result = await this.verifyPin(pin);
+            const result = await this.verifyPin(pin, name);
             if (result === true) {
                 App.showApp();
             } else {
