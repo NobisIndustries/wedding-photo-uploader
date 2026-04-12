@@ -65,6 +65,13 @@ async def verify_pin(body: PinRequest, request: Request):
     return response
 
 
+@router.post("/logout")
+async def logout(request: Request):
+    response = JSONResponse(content={"ok": True})
+    response.delete_cookie(key="session_id", path="/")
+    return response
+
+
 @router.get("/status", response_model=AuthStatus)
 async def auth_status(request: Request):
     session_id = await get_session_id(request)

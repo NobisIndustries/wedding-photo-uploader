@@ -3,6 +3,7 @@ const App = {
         Auth.init();
         Upload.init();
         Gallery.init();
+        this.initLogout();
 
         const authenticated = await Auth.checkStatus();
         if (authenticated) {
@@ -23,6 +24,13 @@ const App = {
         document.getElementById("app-screen").classList.remove("hidden");
         this.applyAdminUI();
         Gallery.refresh();
+    },
+
+    initLogout() {
+        document.getElementById("logout-btn").addEventListener("click", (e) => {
+            e.preventDefault();
+            Auth.logout();
+        });
     },
 
     applyAdminUI() {

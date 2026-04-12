@@ -6,6 +6,8 @@ const Gallery = {
     lightboxIndex: -1,
     activeFilter: "all",
     _thumbPollTimer: null,
+    _loading: false,
+    _observer: null,
 
     async refresh() {
         this.currentPage = 1;
@@ -14,6 +16,8 @@ const Gallery = {
     },
 
     async loadPage(page) {
+        if (this._loading) return;
+        this._loading = true;
         try {
             const res = await fetch(`/api/gallery?page=${page}&per_page=${this.perPage}&filter=${this.activeFilter}`);
             if (res.status === 401) {
@@ -34,6 +38,8 @@ const Gallery = {
             this._schedulePendingThumbPoll();
         } catch (e) {
             console.error("Failed to load gallery:", e);
+        } finally {
+            this._loading = false;
         }
     },
 
@@ -114,7 +120,7 @@ const Gallery = {
             gallery.appendChild(el);
         });
 
-        // Show load more if there are more items
+        // Show/hide sentinel for infinite scroll
         const loaded = this.items.length;
         if (loaded < this.total) {
             loadMore.classList.remove("hidden");
@@ -290,9 +296,14 @@ const Gallery = {
             if (e.key === "ArrowRight") this.navigateLightbox(1);
         });
 
-        document.getElementById("load-more-btn").addEventListener("click", () => {
-            this.loadPage(this.currentPage + 1);
-        });
+        // Infinite scroll via IntersectionObserver
+        const sentinel = document.getElementById("load-more");
+        this._observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !this._loading && this.items.length < this.total) {
+                this.loadPage(this.currentPage + 1);
+            }
+        }, { rootMargin: "200px" });
+        this._observer.observe(sentinel);
 
         // Tab switching
         document.querySelectorAll(".gallery-tab").forEach((tab) => {

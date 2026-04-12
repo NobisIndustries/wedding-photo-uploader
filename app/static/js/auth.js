@@ -26,6 +26,12 @@ const Auth = {
         return true;
     },
 
+    async logout() {
+        await fetch("/api/auth/logout", { method: "POST" });
+        this.isAdmin = false;
+        App.showAuth();
+    },
+
     init() {
         const form = document.getElementById("pin-form");
         const input = document.getElementById("pin-input");
