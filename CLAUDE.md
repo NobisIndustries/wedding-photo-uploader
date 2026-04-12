@@ -10,6 +10,7 @@ Simple self-hosted web app for wedding guests to upload and browse photos/videos
 - **Database:** SQLite via `aiosqlite`
 - **Thumbnails:** Pillow + pillow-heif (images), ffmpeg (videos)
 - **Deployment:** Docker on Debian VM, exposed via Cloudflare Tunnel or ngrok
+- **Caching caveat:** Cloudflare aggressively caches static assets (CSS/JS). Bump the `?v=N` query string in `index.html` when changing CSS or JS files so Cloudflare serves the new version.
 
 ## Running
 
