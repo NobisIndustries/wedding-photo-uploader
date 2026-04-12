@@ -26,11 +26,11 @@ const App = {
     },
 
     applyAdminUI() {
-        const zipBtn = document.getElementById("download-all-btn");
+        const officialToggle = document.getElementById("official-toggle");
         if (Auth.isAdmin) {
-            zipBtn.classList.remove("hidden");
+            officialToggle.classList.remove("hidden");
         } else {
-            zipBtn.classList.add("hidden");
+            officialToggle.classList.add("hidden");
         }
     },
 };

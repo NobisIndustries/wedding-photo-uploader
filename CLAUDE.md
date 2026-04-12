@@ -53,7 +53,9 @@ app/
 
 - **No accounts** — single shared PIN gates access, session tracked via httponly cookie
 - **Session-based deletion** — users can delete their own uploads (matched by session_id cookie). Admin sessions can delete any upload.
-- **Admin mode** — second PIN (`ADMIN_PIN`) grants per-file download buttons in the lightbox and a "download all as ZIP" button in the header. The ZIP is streamed via `zipstream-ng` with `ZIP_STORED` (no compression) so memory stays flat on the N100 — perfect for 50GB+ archives.
+- **Admin mode** — second PIN (`ADMIN_PIN`) grants admin privileges. Admin uploads are automatically marked as "official" (can be opted out per-upload via a checkbox).
+- **Official photos** — uploads from admin sessions are flagged `is_official`. The gallery has two tabs: "All Photos" and "Official Photos". Official photos show a gold star badge in the "All" view.
+- **Downloads for everyone** — per-file download button in the lightbox and "download all as ZIP" button in the header are available to all users, not just admins. The ZIP respects the active tab filter (all vs official). ZIP is streamed via `zipstream-ng` with `ZIP_STORED` (no compression) so memory stays flat on the N100 — perfect for 50GB+ archives.
 - **UUID filenames** — all files stored as `{uuid}.{ext}`, original names in SQLite only
 - **Thumbnails generated async** — background thread after upload. Gallery items carry a `thumbnail_ready` flag; the frontend shows a spinner placeholder and polls `POST /api/gallery/thumbnail-status` (batch) until every pending thumb is ready.
 - **tus protocol** — chunked 5MB uploads with automatic retry/resume for large videos on flaky mobile connections

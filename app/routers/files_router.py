@@ -1,7 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse, StreamingResponse
 
 from app.auth import require_session, require_admin, is_admin_session
@@ -75,8 +75,8 @@ async def get_original(file_id: str, session_id: str = Depends(require_session))
 
 
 @router.get("/{file_id}/download")
-async def download_original(file_id: str, session_id: str = Depends(require_admin)):
-    """Force-download variant of /original — admin-only lightbox download button."""
+async def download_original(file_id: str, session_id: str = Depends(require_session)):
+    """Force-download variant of /original."""
     row = await _get_upload(file_id)
     file_path = _upload_path(row)
     if not file_path.exists():
@@ -117,8 +117,11 @@ async def delete_file(file_id: str, session_id: str = Depends(require_session)):
 
 
 @router.get("/download-all")
-async def download_all(session_id: str = Depends(require_admin)):
-    """Stream a ZIP of every uploaded file. Admin only.
+async def download_all(
+    filter: str = Query("all"),
+    session_id: str = Depends(require_session),
+):
+    """Stream a ZIP of uploaded files.
 
     Uses zipstream-ng with STORED (no compression) so memory usage stays flat
     regardless of archive size — important on the N100 mini PC.
@@ -128,9 +131,14 @@ async def download_all(session_id: str = Depends(require_admin)):
     from zipstream import ZipStream
 
     db = await get_db()
-    cursor = await db.execute(
-        "SELECT id, original_filename, file_extension FROM uploads ORDER BY created_at"
-    )
+    if filter == "official":
+        cursor = await db.execute(
+            "SELECT id, original_filename, file_extension FROM uploads WHERE is_official = 1 ORDER BY created_at"
+        )
+    else:
+        cursor = await db.execute(
+            "SELECT id, original_filename, file_extension FROM uploads ORDER BY created_at"
+        )
     rows = await cursor.fetchall()
 
     zs = ZipStream(compress_type=ZIP_STORED, sized=True)
@@ -155,7 +163,8 @@ async def download_all(session_id: str = Depends(require_admin)):
         zs.add_path(str(disk_path), arcname=arcname)
 
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    filename = f"wedding-photos-{timestamp}.zip"
+    label = "official-photos" if filter == "official" else "wedding-photos"
+    filename = f"{label}-{timestamp}.zip"
 
     headers = {
         "Content-Disposition": f'attachment; filename="{filename}"',

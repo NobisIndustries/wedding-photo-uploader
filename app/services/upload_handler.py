@@ -1,5 +1,7 @@
 import uuid
+import shutil
 import asyncio
+import logging
 from pathlib import Path
 from typing import Callable
 
@@ -7,9 +9,11 @@ from fastapi import Depends, Request, HTTPException, APIRouter
 from tuspyserver import create_tus_router
 
 from app import config
-from app.auth import require_session
+from app.auth import require_session, is_admin_session
 from app.database import get_db
 from app.services.thumbnail import generate_assets
+
+logger = logging.getLogger(__name__)
 
 
 def _get_extension(filename: str) -> str:
@@ -43,22 +47,41 @@ def _make_upload_complete_dep(
         mime_type = metadata.get("filetype", "application/octet-stream")
         ext = _get_extension(original_filename)
 
+        # Admin uploads are official unless explicitly opted out via metadata
+        is_official = 0
+        admin = await is_admin_session(session_id)
+        if admin:
+            official_meta = metadata.get("official", "1")
+            is_official = 0 if official_meta == "0" else 1
+
         file_id = uuid.uuid4().hex
         new_filename = f"{file_id}.{ext}" if ext else file_id
         new_path = config.UPLOADS_DIR / new_filename
 
         src = Path(file_path)
-        src.rename(new_path)
+        try:
+            # shutil.move works across filesystems unlike Path.rename
+            shutil.move(str(src), str(new_path))
+        except Exception:
+            logger.exception("Failed to move uploaded file %s -> %s", src, new_path)
+            raise
 
         file_size = new_path.stat().st_size
 
-        db = await get_db()
-        await db.execute(
-            """INSERT INTO uploads (id, session_id, original_filename, mime_type, file_extension, file_size)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (file_id, session_id, original_filename, mime_type, ext, file_size),
-        )
-        await db.commit()
+        try:
+            db = await get_db()
+            await db.execute(
+                """INSERT INTO uploads (id, session_id, original_filename, mime_type, file_extension, file_size, is_official)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (file_id, session_id, original_filename, mime_type, ext, file_size, is_official),
+            )
+            await db.commit()
+        except Exception:
+            logger.exception(
+                "DB insert failed for %s — file preserved at %s for recovery",
+                file_id, new_path,
+            )
+            raise
 
         asyncio.get_event_loop().run_in_executor(
             None, generate_assets, str(new_path), file_id, ext

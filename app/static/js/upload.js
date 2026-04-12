@@ -43,12 +43,14 @@ const Upload = {
 
     startUpload(file) {
         const itemId = "upload-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6);
+        const officialCheckbox = document.getElementById("official-checkbox");
         const entry = {
             id: itemId,
             file,
             status: "queued",
             progress: 0,
             tusUpload: null,
+            official: Auth.isAdmin && officialCheckbox && officialCheckbox.checked,
         };
         this.queue.push(entry);
         this._render();
@@ -85,6 +87,7 @@ const Upload = {
             metadata: {
                 filename: entry.file.name,
                 filetype: entry.file.type || "application/octet-stream",
+                official: entry.official ? "1" : "0",
             },
             onProgress: (bytesUploaded, bytesTotal) => {
                 entry.progress = (bytesUploaded / bytesTotal) * 100;
@@ -104,7 +107,7 @@ const Upload = {
                 entry.status = "error";
                 this._updateItemProgress(entry);
                 console.error("Upload failed:", error);
-                this._scheduleRemoval(entry);
+                // Don't auto-remove — keep visible so user can retry
                 this._pumpQueue();
             },
         });
@@ -112,6 +115,21 @@ const Upload = {
         entry.tusUpload = upload;
         this._render();
         upload.start();
+    },
+
+    retryUpload(entryId) {
+        const entry = this.queue.find((e) => e.id === entryId);
+        if (!entry || entry.status !== "error") return;
+        entry.status = "queued";
+        entry.progress = 0;
+        this._render();
+        this._pumpQueue();
+    },
+
+    dismissUpload(entryId) {
+        const idx = this.queue.findIndex((e) => e.id === entryId);
+        if (idx !== -1) this.queue.splice(idx, 1);
+        this._render();
     },
 
     _visibleEntries() {
@@ -202,12 +220,26 @@ const Upload = {
             bar.classList.add("complete");
             bar.classList.remove("error");
             status.textContent = "Done";
+            // Remove retry actions if present
+            const actions = el.querySelector(".upload-error-actions");
+            if (actions) actions.remove();
         } else if (entry.status === "error") {
             bar.classList.add("error");
             bar.classList.remove("complete");
             status.textContent = "Failed";
+            // Add retry + dismiss buttons if not already present
+            if (!el.querySelector(".upload-error-actions")) {
+                const actions = document.createElement("span");
+                actions.className = "upload-error-actions";
+                actions.innerHTML =
+                    `<button class="upload-retry-btn" onclick="Upload.retryUpload('${entry.id}')">Retry</button>` +
+                    `<button class="upload-dismiss-btn" onclick="Upload.dismissUpload('${entry.id}')">&times;</button>`;
+                el.appendChild(actions);
+            }
         } else if (entry.status === "queued") {
             status.textContent = "Waiting…";
+            const actions = el.querySelector(".upload-error-actions");
+            if (actions) actions.remove();
         } else {
             status.textContent = pct + "%";
         }

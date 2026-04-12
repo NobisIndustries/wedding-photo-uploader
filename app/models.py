@@ -19,6 +19,7 @@ class UploadItem(BaseModel):
     file_size: int
     created_at: str
     is_owner: bool
+    is_official: bool
     uploader_name: str | None = None
     thumbnail_url: str
     preview_url: str

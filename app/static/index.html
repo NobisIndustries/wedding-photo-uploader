@@ -35,7 +35,7 @@
         <header class="app-header">
             <h1>Our Wedding Photos</h1>
             <div class="header-actions">
-                <a id="download-all-btn" class="btn btn-secondary hidden"
+                <a id="download-all-btn" class="btn btn-secondary"
                    href="/api/files/download-all" title="Download all as ZIP">
                     &#11015; ZIP
                 </a>
@@ -47,8 +47,20 @@
                    accept="image/*,video/*" class="hidden">
         </header>
 
+        <!-- Admin: official photo toggle -->
+        <label id="official-toggle" class="official-toggle hidden">
+            <input type="checkbox" id="official-checkbox" checked>
+            Mark uploads as official
+        </label>
+
         <!-- Upload Progress -->
         <div id="upload-progress" class="upload-progress hidden"></div>
+
+        <!-- Gallery Tabs -->
+        <div class="gallery-tabs">
+            <button class="gallery-tab active" data-filter="all">All Photos</button>
+            <button class="gallery-tab" data-filter="official">Official Photos</button>
+        </div>
 
         <!-- Gallery -->
         <div id="gallery" class="gallery">

@@ -4,6 +4,7 @@ const Gallery = {
     total: 0,
     items: [],
     lightboxIndex: -1,
+    activeFilter: "all",
     _thumbPollTimer: null,
 
     async refresh() {
@@ -14,7 +15,7 @@ const Gallery = {
 
     async loadPage(page) {
         try {
-            const res = await fetch(`/api/gallery?page=${page}&per_page=${this.perPage}`);
+            const res = await fetch(`/api/gallery?page=${page}&per_page=${this.perPage}&filter=${this.activeFilter}`);
             if (res.status === 401) {
                 App.showAuth();
                 return;
@@ -36,6 +37,22 @@ const Gallery = {
         }
     },
 
+    setFilter(filter) {
+        if (filter === this.activeFilter) return;
+        this.activeFilter = filter;
+        document.querySelectorAll(".gallery-tab").forEach((tab) => {
+            tab.classList.toggle("active", tab.dataset.filter === filter);
+        });
+        // Update ZIP download link to match filter
+        const zipBtn = document.getElementById("download-all-btn");
+        if (filter === "official") {
+            zipBtn.href = "/api/files/download-all?filter=official";
+        } else {
+            zipBtn.href = "/api/files/download-all";
+        }
+        this.refresh();
+    },
+
     render() {
         const gallery = document.getElementById("gallery");
         const emptyState = document.getElementById("empty-state");
@@ -46,6 +63,11 @@ const Gallery = {
 
         if (this.items.length === 0) {
             emptyState.classList.remove("hidden");
+            if (this.activeFilter === "official") {
+                emptyState.querySelector("p").textContent = "No official photos yet.";
+            } else {
+                emptyState.querySelector("p").textContent = "No photos yet \u2014 be the first to share!";
+            }
             loadMore.classList.add("hidden");
             return;
         }
@@ -55,6 +77,7 @@ const Gallery = {
         this.items.forEach((item) => {
             const el = document.createElement("div");
             el.className = "gallery-item";
+            if (item.is_official) el.classList.add("official");
             el.dataset.id = item.id;
 
             const isVideo = item.mime_type.startsWith("video/");
@@ -65,6 +88,7 @@ const Gallery = {
                     <img src="${item.thumbnail_url}" alt="${this._escapeHtml(item.original_filename)}"
                          loading="lazy" onerror="this.style.display='none'">
                     ${isVideo ? '<span class="video-badge">&#9654; Video</span>' : ""}
+                    ${item.is_official && this.activeFilter === "all" ? '<span class="official-badge">&#9733;</span>' : ""}
                     ${canDelete ? '<button class="delete-btn" title="Delete">&times;</button>' : ""}
                 `;
             } else {
@@ -73,6 +97,7 @@ const Gallery = {
                         <div class="thumb-spinner"></div>
                     </div>
                     ${isVideo ? '<span class="video-badge">&#9654; Video</span>' : ""}
+                    ${item.is_official && this.activeFilter === "all" ? '<span class="official-badge">&#9733;</span>' : ""}
                     ${canDelete ? '<button class="delete-btn" title="Delete">&times;</button>' : ""}
                 `;
             }
@@ -227,13 +252,10 @@ const Gallery = {
             caption.classList.add("hidden");
         }
 
+        // Download button — available to everyone
         const dl = document.getElementById("lightbox-download");
-        if (Auth.isAdmin) {
-            dl.href = `/api/files/${item.id}/download`;
-            dl.classList.remove("hidden");
-        } else {
-            dl.classList.add("hidden");
-        }
+        dl.href = `/api/files/${item.id}/download`;
+        dl.classList.remove("hidden");
     },
 
     navigateLightbox(delta) {
@@ -270,6 +292,11 @@ const Gallery = {
 
         document.getElementById("load-more-btn").addEventListener("click", () => {
             this.loadPage(this.currentPage + 1);
+        });
+
+        // Tab switching
+        document.querySelectorAll(".gallery-tab").forEach((tab) => {
+            tab.addEventListener("click", () => this.setFilter(tab.dataset.filter));
         });
     },
 

@@ -36,8 +36,14 @@ async def init_db():
             mime_type TEXT,
             file_extension TEXT,
             file_size INTEGER,
+            is_official INTEGER NOT NULL DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (session_id) REFERENCES sessions(id)
         )
     """)
+    # Migrations for existing uploads table
+    cursor = await db.execute("PRAGMA table_info(uploads)")
+    upload_cols = {row[1] for row in await cursor.fetchall()}
+    if "is_official" not in upload_cols:
+        await db.execute("ALTER TABLE uploads ADD COLUMN is_official INTEGER NOT NULL DEFAULT 0")
     await db.commit()

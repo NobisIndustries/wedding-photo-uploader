@@ -226,12 +226,98 @@ h1 {
     background: var(--danger);
 }
 
+.upload-error-actions {
+    display: inline-flex;
+    gap: 4px;
+    margin-left: 4px;
+    flex-shrink: 0;
+}
+
+.upload-retry-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.upload-retry-btn:hover { background: var(--accent-hover); }
+
+.upload-dismiss-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+.upload-dismiss-btn:hover { color: var(--danger); }
+
 .upload-more {
     padding: 6px 0 2px;
     font-size: 12px;
     color: var(--text-muted);
     text-align: center;
     font-style: italic;
+}
+
+/* ── Gallery Tabs ── */
+.gallery-tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 16px;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+}
+
+.gallery-tab {
+    flex: 1;
+    padding: 12px 16px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    text-align: center;
+    font-family: inherit;
+}
+
+.gallery-tab:hover { color: var(--text); }
+
+.gallery-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+}
+
+.gallery-tab[data-filter="official"] { letter-spacing: 0.02em; }
+
+/* ── Official Upload Toggle ── */
+.official-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px 2px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+    width: 100%;
+}
+
+.official-toggle input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
 }
 
 /* ── Gallery Grid ── */
@@ -291,6 +377,23 @@ h1 {
     font-size: 11px;
     padding: 2px 6px;
     border-radius: 4px;
+}
+
+.gallery-item .official-badge {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    background: var(--accent);
+    color: white;
+    font-size: 12px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    pointer-events: none;
 }
 
 .gallery-item .delete-btn {
