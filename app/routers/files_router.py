@@ -11,6 +11,27 @@ from app import config
 router = APIRouter()
 
 
+@router.post("/check-hashes")
+async def check_hashes(
+    hashes: list[str],
+    session_id: str = Depends(require_session),
+):
+    """Check which file hashes already exist in the database."""
+    db = await get_db()
+    existing = set()
+    # Query in batches to avoid overly long SQL
+    for i in range(0, len(hashes), 100):
+        batch = hashes[i : i + 100]
+        placeholders = ",".join("?" for _ in batch)
+        cursor = await db.execute(
+            f"SELECT file_hash FROM uploads WHERE file_hash IN ({placeholders})",
+            batch,
+        )
+        rows = await cursor.fetchall()
+        existing.update(row["file_hash"] for row in rows)
+    return {h: h in existing for h in hashes}
+
+
 async def _get_upload(file_id: str):
     db = await get_db()
     cursor = await db.execute("SELECT * FROM uploads WHERE id = ?", (file_id,))

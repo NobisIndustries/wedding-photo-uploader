@@ -1,6 +1,7 @@
 import uuid
 import shutil
 import asyncio
+import hashlib
 import logging
 from pathlib import Path
 from typing import Callable
@@ -14,6 +15,15 @@ from app.database import get_db
 from app.services.thumbnail import generate_assets
 
 logger = logging.getLogger(__name__)
+
+
+def _compute_file_hash(file_path: str) -> str:
+    """Compute SHA-256 hash of a file."""
+    h = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def _get_extension(filename: str) -> str:
@@ -54,11 +64,31 @@ def _make_upload_complete_dep(
             official_meta = metadata.get("official", "1")
             is_official = 0 if official_meta == "0" else 1
 
+        # Compute hash before moving to detect duplicates
+        src = Path(file_path)
+        file_hash = await asyncio.get_event_loop().run_in_executor(
+            None, _compute_file_hash, str(src)
+        )
+
+        # Check for duplicate
+        db = await get_db()
+        cursor = await db.execute(
+            "SELECT id FROM uploads WHERE file_hash = ?", (file_hash,)
+        )
+        existing = await cursor.fetchone()
+        if existing:
+            # Duplicate — remove the uploaded temp file and skip
+            try:
+                src.unlink()
+            except Exception:
+                pass
+            logger.info("Duplicate upload skipped (hash %s matches %s)", file_hash, existing["id"])
+            return
+
         file_id = uuid.uuid4().hex
         new_filename = f"{file_id}.{ext}" if ext else file_id
         new_path = config.UPLOADS_DIR / new_filename
 
-        src = Path(file_path)
         try:
             # shutil.move works across filesystems unlike Path.rename
             shutil.move(str(src), str(new_path))
@@ -69,11 +99,10 @@ def _make_upload_complete_dep(
         file_size = new_path.stat().st_size
 
         try:
-            db = await get_db()
             await db.execute(
-                """INSERT INTO uploads (id, session_id, original_filename, mime_type, file_extension, file_size, is_official)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (file_id, session_id, original_filename, mime_type, ext, file_size, is_official),
+                """INSERT INTO uploads (id, session_id, original_filename, mime_type, file_extension, file_size, file_hash, is_official)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (file_id, session_id, original_filename, mime_type, ext, file_size, file_hash, is_official),
             )
             await db.commit()
         except Exception:

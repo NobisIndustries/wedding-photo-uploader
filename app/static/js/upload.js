@@ -12,13 +12,20 @@ const Upload = {
     MAX_CONCURRENT: 3,
     queue: [],
 
+    async _computeHash(file) {
+        const buffer = await file.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    },
+
     init() {
         const fileInput = document.getElementById("file-input");
-        fileInput.addEventListener("change", (e) => {
+        fileInput.addEventListener("change", async (e) => {
             const files = Array.from(e.target.files);
             if (files.length === 0) return;
-            files.forEach((file) => this.startUpload(file));
             fileInput.value = "";
+            await this._enqueueFiles(files);
         });
 
         // Warn before navigating away if uploads are still in flight. Browsers
@@ -39,6 +46,71 @@ const Upload = {
                 return "";
             }
         });
+    },
+
+    async _enqueueFiles(files) {
+        // Compute hashes and check for duplicates in one batch
+        const fileHashes = [];
+        for (const file of files) {
+            try {
+                const hash = await this._computeHash(file);
+                fileHashes.push({ file, hash });
+            } catch (e) {
+                // If hashing fails (e.g. very large file), just upload it
+                console.warn("Hash computation failed for", file.name, e);
+                fileHashes.push({ file, hash: null });
+            }
+        }
+
+        const hashesToCheck = fileHashes.filter((fh) => fh.hash).map((fh) => fh.hash);
+        let existingHashes = {};
+        if (hashesToCheck.length > 0) {
+            try {
+                const res = await fetch("/api/files/check-hashes", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(hashesToCheck),
+                });
+                if (res.ok) existingHashes = await res.json();
+            } catch (e) {
+                console.warn("Hash check failed, uploading all files:", e);
+            }
+        }
+
+        let skipped = 0;
+        for (const { file, hash } of fileHashes) {
+            if (hash && existingHashes[hash]) {
+                skipped++;
+                continue;
+            }
+            this.startUpload(file);
+        }
+
+        if (skipped > 0) {
+            const noun = skipped === 1 ? "file was" : "files were";
+            this._showSkippedNotice(`${skipped} duplicate ${noun} skipped.`);
+        }
+    },
+
+    _showSkippedNotice(message) {
+        // Show a brief toast-like notice
+        let notice = document.getElementById("upload-skip-notice");
+        if (!notice) {
+            notice = document.createElement("div");
+            notice.id = "upload-skip-notice";
+            notice.style.cssText =
+                "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);" +
+                "background:rgba(0,0,0,0.8);color:#fff;padding:10px 20px;border-radius:999px;" +
+                "font-size:14px;z-index:2000;transition:opacity 0.3s;";
+            document.body.appendChild(notice);
+        }
+        notice.textContent = message;
+        notice.style.opacity = "1";
+        clearTimeout(this._skipNoticeTimer);
+        this._skipNoticeTimer = setTimeout(() => {
+            notice.style.opacity = "0";
+            setTimeout(() => notice.remove(), 300);
+        }, 3000);
     },
 
     startUpload(file) {
